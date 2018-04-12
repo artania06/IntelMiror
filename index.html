@@ -1,0 +1,162 @@
+<!--
+    This file is part of IntelMiror.
+
+    IntelMiror is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    IntelMiror is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with IntelMiror.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Presentation</title>
+    <meta charset='utf-8'>
+    <script type="text/javascript" src="jshg/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="jshg/compatibility.js"></script>
+    <script type="text/javascript" src="jshg/jshg.js"></script>
+    <style>
+      *
+      {
+        margin: 0;
+        padding: 0;
+        background: black;
+        color: white;
+        text-align: center;
+      }
+
+      body
+      {
+        width: 100%;
+        height: 100%;
+      }
+
+      .fluidMedia
+      {
+        position: relative;
+        padding-bottom: 56.25%;
+        padding-top: 30px;
+        height: 0;
+        overflow: hidden;
+      }
+
+      .fluidMedia iframe
+      {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='gesture-div'>
+      <div id="gestureShownHere"></div>
+    </div>
+    <div id="learningShownHere" class="learning-div"></div>
+    <div class="fluidMedia">
+      <iframe id="appIframe" frameborder="0"></iframe>
+    </div>
+    <script type="text/javascript">
+      let socket = new WebSocket("ws://127.0.0.1:1234");
+      let socketReady = false;
+
+      socket.onopen = function() {
+        socketReady = true;
+      };
+
+      let currentGesture = null;
+
+      let finishLearning = function() {
+        $.getJSON("appentry.json", function(data) {
+          document.getElementById("appIframe").src = data.appentry;
+        });
+      };
+
+      let actionMapper = function(gesture) {
+        if (currentGesture != null && currentGesture.isSameRelativePos(gesture))
+        {
+          return;
+        }
+
+        if (socketReady)
+        {
+          if (gesture.isUp)
+          {
+            if (gesture.isLeft)
+            {
+              socket.send('{"type":"gesture","position":"ur","fingers":' + gesture.nFingers + '}');
+            }
+            else if (gesture.isRight)
+            {
+              socket.send('{"type":"gesture","position":"ul","fingers":' + gesture.nFingers + '}');
+            }
+            else
+            {
+              socket.send('{"type":"gesture","position":"u","fingers":' + gesture.nFingers + '}');
+            }
+          }
+          else if (gesture.isDown)
+          {
+            if (gesture.isLeft)
+            {
+              socket.send('{"type":"gesture","position":"dr","fingers":' + gesture.nFingers + '}');
+            }
+            else if (gesture.isRight)
+            {
+              socket.send('{"type":"gesture","position":"dl","fingers":' + gesture.nFingers + '}');
+            }
+            else
+            {
+              socket.send('{"type":"gesture","position":"d","fingers":' + gesture.nFingers + '}');
+            }
+          }
+          else
+          {
+            if (gesture.isLeft)
+            {
+              socket.send('{"type":"gesture","position":"r","fingers":' + gesture.nFingers + '}');
+            }
+            else if (gesture.isRight)
+            {
+              socket.send('{"type":"gesture","position":"l","fingers":' + gesture.nFingers + '}');
+            }
+            else
+            {
+              socket.send('{"type":"gesture","position":"c","fingers":' + gesture.nFingers + '}');
+            }
+          }
+        }
+
+        currentGesture = gesture;
+      };
+
+      JSHG.init({
+        "actionCallback": actionMapper,
+        "learnCallback": finishLearning,
+        "learnDivId": "learningShownHere",
+        "gestureDivId": "gestureShownHere",
+        "settings": {
+          "learningCountDown": 5,
+          "cameraWidth": 420,
+          "cameraHeight": 300,
+          "gestureDisplayWidth": 100,
+          "gestureDisplayHeight": 100
+        },
+      });
+
+      JSHG.learnSkinColor();
+    </script>
+  </body>
+</html>
